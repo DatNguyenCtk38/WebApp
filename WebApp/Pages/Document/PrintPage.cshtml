@@ -1,0 +1,93 @@
+﻿@page
+@model WebApp.Pages.Document.PrintPageModel
+@{
+}
+<div class="d-flex align-items-md-center d-print-none">
+    <h1>Report and Pirnt Page</h1>
+    <button style="height:max-content" class="btn btn-primary ml-3" onclick="window.print()">Print</button>
+</div>
+
+<h3>User information</h3>
+<div>
+    <div class="row">
+        <div class="col-md-12 d-flex flex-row-reverse">
+            <div class="col-6">
+                <div class="row">
+                    <div class="form-group col-md-6">
+                        <label class="control-label">Personal Photo</label>
+                        <img style="max-height:100px" src="data:image;base64,@System.Convert.ToBase64String(Model.UserInfomation.PersonalPhoto)" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-group col-md-12">
+                    <label class="control-label"> Full Name</label>
+                    @Html.DisplayFor(model => model.UserInfomation.FullName)
+                </div>
+                <div class="form-group col-md-12">
+                    <label class="control-label">Email</label>
+                    @Html.DisplayFor(model => model.UserInfomation.Email)
+                </div>
+                <div class="form-group col-md-12">
+                    <label class="control-label">Phone</label>
+                    @Html.DisplayFor(model => model.UserInfomation.Phone)
+                </div>
+                <div class="form-group col-md-12">
+                    <label class="control-label">Address</label>
+                    @Html.DisplayFor(model => model.UserInfomation.Address)
+                </div>
+                <div class="form-group col-md-12">
+                    <label class="control-label">Birth Date</label>
+                    @Html.DisplayFor(model => model.UserInfomation.Birthdate)
+                </div>
+            </div>
+           
+        </div>
+    </div>
+    <h3>Document</h3>
+    <div>
+        <table class="table mt-4">
+            <thead>
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Documents[0].ID)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Documents[0].Name)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Documents[0].Type)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Documents[0].Size)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Documents[0].UploadDate)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Documents)
+                {
+                    <tr>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.ID)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Name)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Type)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Size)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.UploadDate)
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

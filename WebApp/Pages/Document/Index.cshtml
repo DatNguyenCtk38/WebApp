@@ -1,0 +1,56 @@
+﻿@page
+@model WebApp.Pages.Document.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h1>Upload</h1>
+
+<form method="post" enctype="multipart/form-data" class="d-flex">
+    <input required type="file" asp-for="UploadFile" name="UploadFile" class="form-control col-md-6" />
+    <input type="submit" class="btn btn-primary ml-2" />
+</form>
+<table class="table mt-4">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Documents[0].ID)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documents[0].Name)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documents[0].Type)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documents[0].Size)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Documents[0].UploadDate)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.Documents) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.ID)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Type)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Size)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.UploadDate)
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

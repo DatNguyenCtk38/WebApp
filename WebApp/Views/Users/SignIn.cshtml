@@ -1,0 +1,44 @@
+﻿@model WebApp.Models.UserViewModel
+
+@{
+    ViewData["Title"] = "SignIn";
+    var errorMessage = ViewBag.ErrorMessage;
+}
+
+<h1>Sign In</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-12">
+        <form asp-action="SignIn" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label class="control-label">Email</label>
+                    <input required asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-6">
+                    <label class="control-label">Password</label>
+                    <input type="password" required asp-for="Password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+            </div>
+            <span class="text-danger">@errorMessage</span>
+            <br />
+            <div class="form-group col-md-6">
+                <input type="submit" value="Sign In" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
