@@ -16,45 +16,28 @@ using WebApp.Data;
 using WebApp.Helper;
 using WebApp.Models;
 using WebApp.Models.Entity;
+using WebApp.Service.UserS;
 
 namespace WebApp.Controllers
 {
     public class UsersController : Controller
     {
         private readonly WebAppContext _dbContext;
-        public UsersController(WebAppContext dbContext)
+        private readonly IUserService _userService;
+        public int UserID { get { return int.Parse(HttpContext.User.Claims.FirstOrDefault().Value); } }
+        public UsersController(WebAppContext dbContext, IUserService userService)
         {
             _dbContext = dbContext;
-        }
-
-        // GET: Users
-        [Authorize]
-        public async Task<IActionResult> Index()
-        {
-            return View(await _dbContext.Users.ToListAsync());
-        }
-
-        // GET: Users/Details/5
-        public async Task<IActionResult> Details(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var user = await _dbContext.Users
-                .FirstOrDefaultAsync(m => m.ID == id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return View(user);
+            _userService = userService;
         }
 
         // GET: Users/Create
         public IActionResult SignUp()
         {
+            if (User.Identity.IsAuthenticated)
+            {
+                return Redirect("/Document/Index");
+            }
             return View();
         }
 
@@ -67,6 +50,12 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
+                var isExistEmailUser = await _userService.CheckExistEmailUser(userViewModel.Email);
+                if (isExistEmailUser)
+                {
+                    ViewBag.ErrorMessage = "The Email is existed";
+                    return View(userViewModel);
+                }
                 var user = new User
                 {
                     RegisterDate = DateTime.Now,
@@ -76,14 +65,33 @@ namespace WebApp.Controllers
                     FullName = userViewModel.FullName,
                     Password = EncryptHelper.EncryptPassword(userViewModel.Password),
                     Phone = userViewModel.Phone,
-                    PersonalPhoto = FileHelper.EncryptPassword(userViewModel.PersonalPhoto)
+                    PersonalPhoto = FileHelper.SaveFile(userViewModel.PersonalPhoto)
                 };
 
-                _dbContext.Add(user);
-                await _dbContext.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                await _userService.CreateNewUser(user);
+                await StoreCookie(user);
+                return Redirect("/Document/Index");
             }
             return View(userViewModel);
+        }
+        private async Task StoreCookie(User user)
+        {
+            var claims = new List<Claim>
+                    {
+                        new Claim("UserID", user.ID.ToString()),
+                    };
+            var claimsIdentity = new ClaimsIdentity(
+               claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            var authProperties = new AuthenticationProperties
+            {
+                ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
+            };
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                authProperties);
         }
 
         public IActionResult SignIn()
@@ -104,33 +112,14 @@ namespace WebApp.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = _dbContext.Users.FirstOrDefault(x => x.Email == userViewModel.Email && x.Password == EncryptHelper.EncryptPassword(userViewModel.Password));
+                var user = await _userService.FindEmailUserByEmailAndPassword(userViewModel.Email, userViewModel.Password);
                 if (user == null)
                 {
                     ViewBag.ErrorMessage = "The Email or Password in incorrect";
                     return View(userViewModel);
                 }
-
-                var claims = new List<Claim>
-                    {
-                        new Claim("UserID", user.ID.ToString()),
-                    };
-
-                var claimsIdentity = new ClaimsIdentity(
-                    claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                var authProperties = new AuthenticationProperties
-                {
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
-                };
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    authProperties);
-
-
-                return RedirectToAction(nameof(Index));
+                await StoreCookie(user);
+                return Redirect("/Document/Index");
             }
             return View(userViewModel);
         }
@@ -141,44 +130,46 @@ namespace WebApp.Controllers
             return RedirectToAction("SignIn");
         }
 
-        // GET: Users/Edit/5
-        public async Task<IActionResult> Edit(int? id)
+        
+        [HttpGet]
+        public async Task<IActionResult> Edit()
         {
-            if (id == null)
+            var user = await _userService.GetUserById(UserID);
+            var userViewModel = new UserViewModel
             {
-                return NotFound();
-            }
-
-            var user = await _dbContext.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            return View(user);
+                Address = user.Address,
+                Birthdate = user.Birthdate,
+                Email = user.Email,
+                FullName = user.FullName,
+                BytePersonalPhoto = user.PersonalPhoto,
+                Phone = user.Phone
+            };
+            return View(userViewModel);
         }
 
-        // POST: Users/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ID,FullName,Birthdate,Email,Password,Phone,Address,PersonalPhoto,RegisterDate")] User user)
+        public async Task<IActionResult> Edit(UserViewModel userViewModel)
         {
-            if (id != user.ID)
-            {
-                return NotFound();
-            }
-
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _dbContext.Update(user);
-                    await _dbContext.SaveChangesAsync();
+                    var user = new User
+                    {
+                        Phone = userViewModel.Phone,
+                        FullName = userViewModel.FullName,
+                        Email = userViewModel.Email,
+                        Birthdate = userViewModel.Birthdate,
+                        Address = userViewModel.Address,
+                        ID = UserID
+                    };
+                  
+                    await _userService.UpdateUser(user);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(user.ID))
+                    if (!UserExists(UserID))
                     {
                         return NotFound();
                     }
@@ -187,40 +178,10 @@ namespace WebApp.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                return Redirect("/Document/Index");
             }
-            return View(user);
+            return View(userViewModel);
         }
-
-        // GET: Users/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var user = await _dbContext.Users
-                .FirstOrDefaultAsync(m => m.ID == id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            return View(user);
-        }
-
-        // POST: Users/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var user = await _dbContext.Users.FindAsync(id);
-            _dbContext.Users.Remove(user);
-            await _dbContext.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
-        }
-
         private bool UserExists(int id)
         {
             return _dbContext.Users.Any(e => e.ID == id);

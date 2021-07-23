@@ -11,7 +11,7 @@ namespace WebApp.Helper
 {
     public static class FileHelper
     {
-        public static byte[] EncryptPassword(IFormFile file)
+        public static byte[] SaveFile(IFormFile file)
         {
             if (file.Length > 0)
             {

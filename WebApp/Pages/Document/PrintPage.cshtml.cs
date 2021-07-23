@@ -6,21 +6,22 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using WebApp.Data;
+using WebApp.Service.UserS;
 
 namespace WebApp.Pages.Document
 {
     public class PrintPageModel : BaseRazorModel
     {
-        private readonly WebAppContext _context;
-        public PrintPageModel(WebAppContext context)
+        private readonly IUserService _userService;
+        public PrintPageModel(IUserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
         public IList<Models.Entity.Document> Documents { get; set; }
         public Models.Entity.User UserInfomation { get; set; }
         public async Task OnGet()
         {
-            UserInfomation = await _context.Users.Include(x=> x.Documents).FirstOrDefaultAsync(x => x.ID == UserID);
+            UserInfomation = await _userService.GetUserById(UserID);
             Documents = UserInfomation.Documents.ToList();
         }
     }

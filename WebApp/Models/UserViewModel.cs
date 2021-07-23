@@ -14,6 +14,8 @@ namespace WebApp.Models
         public string Password { get; set; }
         public string Phone { get; set; }
         public string Address { get; set; }
+        public byte[] BytePersonalPhoto { get; set; }
         public IFormFile PersonalPhoto { get; set; }
+        public IFormFile NewPhoto { get; set; }
     }
 }

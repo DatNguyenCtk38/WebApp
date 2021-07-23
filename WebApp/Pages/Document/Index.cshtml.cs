@@ -9,50 +9,31 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using WebApp.Data;
 using WebApp.Models.Entity;
+using WebApp.Service.UserS;
 
 namespace WebApp.Pages.Document
 {
     public class IndexModel : BaseRazorModel
     {
-        private readonly WebAppContext _context;
+        private readonly IDocumentService _documentService;
 
-        public IndexModel(WebAppContext context)
+        public IndexModel(IDocumentService documentService)
         {
-            _context = context;
+            _documentService = documentService;
         }
 
         public IList<Models.Entity.Document> Documents { get;set; }
         public IFormFile UploadFile { get; set; }
         public async Task OnGetAsync()
         {
-            Documents = await _context.Documents.Where(x => x.UserID == UserID).ToListAsync();
+            Documents = await _documentService.GetDocumentsByUserId(UserID);
         }
         
         public async Task<ActionResult> OnPostAsync(IFormFile uploadFile)
         {
             if(uploadFile != null)
             {
-                //Set Key Name
-                string documentName = DateTime.Now.Millisecond + uploadFile.FileName;
-                var savedPath = $"wwwroot/document/Document_UserID_{UserID}";
-                Directory.CreateDirectory(savedPath);
-                //Get url To Save
-                string savePath = Path.Combine(Directory.GetCurrentDirectory(), savedPath, documentName);
-
-                using (var stream = new FileStream(savePath, FileMode.Create))
-                {
-                   await uploadFile.CopyToAsync(stream);
-                }
-                var document = new Models.Entity.Document
-                {
-                    Name = documentName,
-                    Type = Path.GetExtension(uploadFile.FileName),
-                    UploadDate = DateTime.Now,
-                    UserID = UserID,
-                    Size = uploadFile.Length.ToString()
-                };
-                _context.Documents.Add(document);
-                await _context.SaveChangesAsync();
+                await _documentService.Upload(uploadFile, UserID);
             }
             return Redirect("/Document/Index");
         }
